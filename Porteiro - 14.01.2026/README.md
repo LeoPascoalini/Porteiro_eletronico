@@ -68,26 +68,25 @@ Isso permite reduzir o número total de conexões físicas sem perda de funciona
 
 ## 🔌 Conexões via cabo RJ45 (⚠️ **necessário reajuste**)
 
-A tabela abaixo descreve a relação atual entre teclado, cabo RJ45 e pinos do Arduino.
-*(Observação: os nomes “Linha 4” referem-se à posição física do teclado, não a uma linha elétrica adicional.)*
+A tabela abaixo descreve a relação atual entre pinos do Arduino, cabo RJ45, teclado e buzzer.
 
-| Posição no teclado | Matricial | Cor do cabo RJ45 | Pino Arduino |
-| ------------------ | --------- | ---------------- | ------------ |
-| 1                  | Coluna 2  | Azul             | D5           |
-| 2                  | Linha 1   | Azul + Branco    | D7           |
-| 3                  | Coluna 1  | Laranja          | D4           |
-| 4                  | Linha 4   | Laranja + Branco | D10          |
-| 5                  | Coluna 3  | Marrom           | D6           |
-| 6                  | Linha 3   | Marrom + Branco  | D9           |
-| 7                  | Linha 2   | Verde + Branco   | D8           |
+| Pino Arduino | Cor do cabo RJ45 | Pinagem do teclado matricial | Matricial | Buzzer |
+| ------------ | ---------------- | ---------------------------- | --------- | ------ |
+| D5           | Azul             | 7                            | Coluna 3  | -      |
+| D6           | Azul + Branco    | 6                            | Coluna 2  | -      |
+| D7           | Laranja          | 5                            | Coluna 1  | -      |
+| D8           | Laranja + Branco | 4                            | Linha 4   | -      |
+| D9           | Marrom           | 3                            | Linha 3   | -      |
+| D10          | Marrom + Branco  | 1                            | Linha 1-2 | -      |
+| D11          | Verde + Branco   | -                            | -         | Sinal  |
+| GND          | Verde            | -                            | -         | GND    |
 
 ---
 
 ## ✅ Vantagens do método
 
-* ✔ Apenas **6 fios** para um teclado 4×3 completo
-* ✔ Compatível com **cabo RJ45**
-* ✔ Elimina dependência da biblioteca `Keypad`
+* ✔ Apenas **6 fios** para um teclado 4×3 completo e dois para o buzzer
+* ✔ Compatível com **cabo RJ45** 
 * ✔ Controle total do hardware e do firmware
 * ✔ Fácil integração com sistemas embarcados (porteiros, fechaduras, controle de acesso)
 
