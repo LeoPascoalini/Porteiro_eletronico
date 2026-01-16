@@ -259,14 +259,14 @@ void zelda() {
   const int d = 125;   // duração base
   const int gap = 12;  // pausa curtinha
 
-  tone(BUZZER_PIN, 698); delay(d); noTone(BUZZER_PIN); delay(gap);  // F5
-  tone(BUZZER_PIN, 659); delay(d); noTone(BUZZER_PIN); delay(gap);  // E5
-  tone(BUZZER_PIN, 262); delay(d); noTone(BUZZER_PIN); delay(gap);  // C4
-  tone(BUZZER_PIN, 392); delay(d); noTone(BUZZER_PIN); delay(gap);  // G4
-  tone(BUZZER_PIN, 349); delay(d); noTone(BUZZER_PIN); delay(gap);  // F4
-  tone(BUZZER_PIN, 659); delay(d); noTone(BUZZER_PIN); delay(gap);  // E5
-  tone(BUZZER_PIN, 784); delay(d); noTone(BUZZER_PIN); delay(gap);  // G5
-  tone(BUZZER_PIN, 988); delay(d); noTone(BUZZER_PIN); delay(gap);  // B5
+  tone(BUZZER_PIN, 1568); delay(d); noTone(BUZZER_PIN); delay(gap);  // F5
+  tone(BUZZER_PIN, 1481); delay(d); noTone(BUZZER_PIN); delay(gap);  // E5
+  tone(BUZZER_PIN, 1246); delay(d); noTone(BUZZER_PIN); delay(gap);  // C4
+  tone(BUZZER_PIN, 880); delay(d); noTone(BUZZER_PIN); delay(gap);  // G4
+  tone(BUZZER_PIN, 826); delay(d); noTone(BUZZER_PIN); delay(gap);  // F4
+  tone(BUZZER_PIN, 1318); delay(d); noTone(BUZZER_PIN); delay(gap);  // E5
+  tone(BUZZER_PIN, 1664); delay(d); noTone(BUZZER_PIN); delay(gap);  // G5
+  tone(BUZZER_PIN, 2093); delay(d); noTone(BUZZER_PIN); delay(gap);  // B5
 
   noTone(BUZZER_PIN);
   delay(500);
