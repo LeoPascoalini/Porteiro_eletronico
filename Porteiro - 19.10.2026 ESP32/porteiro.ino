@@ -38,8 +38,8 @@ uint8_t PCF_ADDR = 0x20;
 const uint32_t I2C_CLOCK = 50000;  // clock reduzido por causa do cabo longo
 
 // Bits do PCF8574 (P0..P7) usados pelo teclado 3x4 (7 conexões)
-const byte colPins[] = {5, 7, 3};      // C1=P5, C2=P7, C3=P3
-const byte rowPins[] = {6, 1, 2, 4};   // L1=P6, L2=P1, L3=P2, L4=P4  (P0 livre)
+const byte colPins[] = {3, 7, 5};      // C1=P3, C2=P7, C3=P5
+const byte rowPins[] = {4, 2, 1, 6};   // L1=P4, L2=P2, L3=P1, L4=P6  (P0 livre)
 
 // Layout visual (o que deve retornar)
 const char keypadLayout[4][3] = {
@@ -458,6 +458,8 @@ void responder(int codigo, bool ok, const char* msg) {
 }
 
 void handlePagina() {
+  // Sem cache: depois de gravar um código novo, o celular sempre pega a página atualizada
+  server.sendHeader("Cache-Control", "no-store");
   server.send_P(200, "text/html; charset=utf-8", PAGINA);
 }
 

@@ -51,12 +51,12 @@ Teclado matricial 3×4 padrão, com 7 conexões. A varredura coloca uma coluna p
 | PCF8574 | Teclado  | Teclas       |
 | ------- | -------- | ------------ |
 | P0      | –        | livre        |
-| P1      | Linha 2  | 4, 5, 6      |
-| P2      | Linha 3  | 7, 8, 9      |
-| P3      | Coluna 3 | 3, 6, 9, #   |
-| P4      | Linha 4  | *, 0, #      |
-| P5      | Coluna 1 | 1, 4, 7, *   |
-| P6      | Linha 1  | 1, 2, 3      |
+| P1      | Linha 3  | 7, 8, 9      |
+| P2      | Linha 2  | 4, 5, 6      |
+| P3      | Coluna 1 | 1, 4, 7, *   |
+| P4      | Linha 1  | 1, 2, 3      |
+| P5      | Coluna 3 | 3, 6, 9, #   |
+| P6      | Linha 4  | *, 0, #      |
 | P7      | Coluna 2 | 2, 5, 8, 0   |
 
 > 💡 A ordem dos pinos no conector do teclado muda de fabricante para fabricante. Identifique as colunas e linhas com um multímetro (modo continuidade, apertando as teclas). Se alguma tecla sair trocada, basta ajustar `colPins[]` / `rowPins[]` no código.
@@ -79,6 +79,8 @@ O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 vi
 * O teclado físico funciona normalmente mesmo sem Wi-Fi. Se a rede cair, o ESP32 reconecta sozinho.
 * O site funciona só dentro da rede da casa. Não abra porta no roteador para ele: a página usa HTTP sem criptografia.
 
+> 💡 Digite o endereço com **`http://`** (sem o "s"). Se o navegador trocar sozinho para `https://`, a página não abre. Depois de abrir, salve como atalho na tela inicial.
+>
 > 💡 Alguns celulares Android não reconhecem endereços `.local`. Nesse caso, use o IP. Para o IP não mudar, reserve um IP fixo para o ESP32 no roteador (DHCP reservado).
 
 ---
