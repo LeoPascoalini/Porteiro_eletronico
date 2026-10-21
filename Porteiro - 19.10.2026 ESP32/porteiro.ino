@@ -95,31 +95,74 @@ static bool pcfDetect() {
   return false;
 }
 
-// Coloca uma coluna em LOW (as outras e as linhas ficam em pull-up) e lê o estado
-static inline uint8_t activateCol(byte colBit) {
-  pcfWrite(0xFF & ~(1 << colBit));
+// Lê duas vezes; se as leituras não baterem (ruído no cabo), considera "nada apertado"
+static uint8_t pcfReadEstavel() {
+  uint8_t a = pcfRead();
+  uint8_t b = pcfRead();
+  return (a == b) ? a : 0xFF;
+}
+
+// Escreve o estado dos pinos e lê de volta, de forma estável
+static inline uint8_t aplicarELer(uint8_t value) {
+  pcfWrite(value);
   delayMicroseconds(settleUs);
-  return pcfRead();
+  return pcfReadEstavel();
 }
 
 static inline bool isLow(uint8_t state, byte bit) { return !(state & (1 << bit)); }
 
 // =======================================================
+// KEYPAD: proteção contra fuga (umidade) e ruído
+// -------------------------------------------------------
+// Uma leitura é descartada quando:
+//  - sem nenhuma coluna ativa, já existe linha/coluna em LOW (fuga para o GND)
+//  - uma coluna que não está ativa aparece em LOW
+//  - mais de uma tecla aparece ao mesmo tempo
+// =======================================================
+uint8_t keypadMask = 0;            // bits do PCF8574 usados pelo teclado
+unsigned long ultimoAvisoFuga = 0;
+
+static void avisarFuga(const char* motivo, uint8_t estado) {
+#if SERIAL_PRINT
+  if (millis() - ultimoAvisoFuga < 5000) return;   // no máximo 1 aviso a cada 5 s
+  ultimoAvisoFuga = millis();
+  Serial.print("Teclado: leitura descartada ("); Serial.print(motivo);
+  Serial.print(") estado=0x"); Serial.print(estado, HEX);
+  Serial.println(" - possivel umidade/fuga no teclado ou na placa");
+#endif
+}
+
+// =======================================================
 // KEYPAD: scan cru (sem debounce)
 // =======================================================
 char scanRawKeypad() {
+  // Nenhuma coluna ativa: tudo que o teclado usa deveria estar em HIGH
+  uint8_t idle = aplicarELer(0xFF);
+  if (~idle & keypadMask) { avisarFuga("fuga em repouso", idle); return 0; }
+
+  char found = 0;
+
   for (byte col = 0; col < 3; col++) {
-    uint8_t state = activateCol(colPins[col]);
+    uint8_t state = aplicarELer(0xFF & ~(1 << colPins[col]));
+
+    // Outra coluna em LOW sem estar ativa: leitura inválida
+    for (byte c = 0; c < 3; c++) {
+      if (c != col && isLow(state, colPins[c])) {
+        idleAllPins(); avisarFuga("coluna inativa em LOW", state); return 0;
+      }
+    }
 
     for (byte row = 0; row < 4; row++) {
       if (!isLow(state, rowPins[row])) continue;
-      idleAllPins();
-      return keypadLayout[row][col];
+      if (found) {   // mais de uma tecla ao mesmo tempo
+        idleAllPins(); avisarFuga("varias teclas", state); return 0;
+      }
+      found = keypadLayout[row][col];
     }
   }
 
   idleAllPins();
-  return 0;
+  return found;
 }
 
 // =======================================================
@@ -574,6 +617,9 @@ void setup() {
 
   Wire.begin(I2C_SDA, I2C_SCL, I2C_CLOCK);
   pcfOk = pcfDetect(); // acha o endereço e já deixa os pinos em idle
+
+  for (byte c : colPins) keypadMask |= (1 << c);
+  for (byte r : rowPins) keypadMask |= (1 << r);
 
 #if SERIAL_PRINT
   if (pcfOk) {
