@@ -29,7 +29,7 @@ Cada sinal I2C vai trançado com um GND, o que reduz interferência em cabo long
 | Marrom  | Marrom           | Buzzer (GND)    | GND        | Buzzer −         |
 
 > ⚠️ Alimente o PCF8574 com **3V3** (não 5V): assim os níveis do I2C ficam compatíveis com o ESP32.
-> Para cabos longos, coloque **pull-ups de 4,7 kΩ** em SDA e SCL para 3V3, a menos que o módulo PCF8574 já tenha. O clock está reduzido para 50 kHz (`I2C_CLOCK`); se der erro de leitura, baixe para 10–20 kHz.
+> Para cabos longos, coloque **pull-ups de 4,7 kΩ** em SDA e SCL para 3V3, a menos que o módulo PCF8574 já tenha (o módulo vermelho PCF8574T já vem com 3,3 kΩ; confira medindo SDA–VCC e SCL–VCC com tudo desligado). O clock está reduzido para 50 kHz (`I2C_CLOCK`); se der erro de leitura, baixe para 10–20 kHz.
 
 ---
 
@@ -60,6 +60,8 @@ Teclado matricial 3×4 padrão, com 7 conexões. A varredura coloca uma coluna p
 | P7      | Coluna 2 | 2, 5, 8, 0   |
 
 > 💡 A ordem dos pinos no conector do teclado muda de fabricante para fabricante. Identifique as colunas e linhas com um multímetro (modo continuidade, apertando as teclas). Se alguma tecla sair trocada, basta ajustar `colPins[]` / `rowPins[]` no código.
+>
+> ⚠️ **Coloque um resistor de 10 kΩ de cada linha (P1, P2, P4 e P6) para o VCC.** O pull-up interno do PCF8574 é muito fraco (~100 µA), e a umidade do lado de fora basta para puxar a linha para LOW, gerando teclas fantasmas (aconteceu na instalação, de madrugada). Os resistores ficam em paralelo com a ligação existente: uma perna no pino da linha e a outra no VCC, sem cortar nada. Nas colunas não precisa.
 
 ---
 
