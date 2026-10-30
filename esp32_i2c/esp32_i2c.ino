@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include "segredos.h"  // Wi-Fi e senha de administrador (não vai para o git; veja segredos.exemplo.h)
 
 // =======================================================
 // PORTEIRO ELETRÔNICO - ESP32 + PCF8574 (I2C via RJ45)
@@ -11,8 +12,6 @@
 #define SERIAL_PRINT 1 // 1 para ativar prints no Serial Monitor; 0 para desativar
 
 // ------------------ Wi-Fi / Site local ------------------
-const char* WIFI_SSID  = "NOME_DA_REDE";
-const char* WIFI_SENHA = "SENHA_DA_REDE";
 const char* HOSTNAME   = "porteiro";        // acesso por http://porteiro.local
 
 // Proteção contra tentativas pelo site
@@ -221,7 +220,7 @@ void atualizarRele() {
 
 //------------------ Variáveis ------------------
 String gabarito = "123456";
-String gabaritoADM = "246810";
+String gabaritoADM = SENHA_ADM;  // definida em segredos.h
 String senha = "";
 int comparaGabarito;
 int comparaGabaritoADM;

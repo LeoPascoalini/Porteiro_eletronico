@@ -1,3 +1,9 @@
+# 📟 Porteiro Eletrônico – Arduino + teclado 3×4 (7 fios via RJ45)
+
+Primeira versão, com a biblioteca `Keypad`.
+
+> 🔑 Antes de compilar, copie o `segredos.exemplo.h` para `segredos.h` e coloque a senha de administrador (`SENHA_ADM`). O `segredos.h` não vai para o git.
+
 Relação de conexão entradas cabo RJ45
 
 | Posição Teclado | Matricial | Cor            | Entrada Arduino |

@@ -92,6 +92,12 @@ A tabela abaixo descreve a relação atual entre pinos do Arduino, cabo RJ45, te
 
 ---
 
+## 🔑 Senha de administrador
+
+Antes de compilar, copie o `segredos.exemplo.h` para `segredos.h` e coloque a senha de administrador (`SENHA_ADM`). O `segredos.h` não vai para o git.
+
+---
+
 ## 🧾 Autoria
 
 **Desenvolvimento do método de teclado matricial 4×3 com 6 fios:**

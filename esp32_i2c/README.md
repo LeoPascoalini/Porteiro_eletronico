@@ -69,13 +69,13 @@ Teclado matricial 3×4 padrão, com 7 conexões. A varredura coloca uma coluna p
 
 O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 virtual**. Ela funciona igual ao teclado físico: digite a senha, `*` apaga e `#` abre.
 
-1. Preencha `WIFI_SSID` e `WIFI_SENHA` no início do código e grave no ESP32.
+1. Preencha `WIFI_SSID` e `WIFI_SENHA` no `segredos.h` (veja [Senhas](#-senhas-segredosh)) e grave no ESP32.
 2. Abra o Serial Monitor (115200). Quando conectar, ele mostra o endereço do site, por exemplo `http://192.168.0.50`.
 3. No celular, conectado ao mesmo Wi-Fi, abra `http://porteiro.local` ou o IP mostrado. Dá para adicionar à tela inicial como atalho.
 
 * A senha é a mesma do teclado físico.
 * **Modo administrador pelo site:** digite a senha de administrador e aperte `#`. Aparece a opção **Trocar senha do portão**; digite os 6 dígitos novos (eles aparecem na tela para conferir) e aperte `#` para salvar. O portão toca o som de nova configuração. A sessão expira após 3 minutos sem uso.
-* A senha de administrador é fixa no código (`gabaritoADM`) e não pode ser trocada pelo site nem pelo teclado. A senha do portão não pode ser igual a ela.
+* A senha de administrador é fixa no `segredos.h` (`SENHA_ADM`) e não pode ser trocada pelo site nem pelo teclado. A senha do portão não pode ser igual a ela.
 * Senha certa pelo site: o relé aciona e a música toca no portão. Senha errada: toca o som de erro.
 * Depois de **5 erros seguidos**, o site fica bloqueado por **1 minuto**.
 * O teclado físico funciona normalmente mesmo sem Wi-Fi. Se a rede cair, o ESP32 reconecta sozinho.
@@ -95,11 +95,21 @@ O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 vi
 | `I2C_CLOCK`    | `50000` | Clock do I2C em Hz                                 |
 | `RELE_ATIVO`   | `HIGH`  | Nível que aciona o relé                            |
 | `SERIAL_PRINT` | `1`     | Mensagens no Serial Monitor (115200 baud)          |
-| `WIFI_SSID` / `WIFI_SENHA` | – | Rede Wi-Fi da casa                          |
 | `HOSTNAME`     | `porteiro` | Nome do site: `http://porteiro.local`          |
 | `WEB_MAX_ERROS` / `WEB_BLOQUEIO_MS` | `5` / `60000` | Erros seguidos pelo site até bloquear, e por quanto tempo |
 
 Na inicialização, o Serial Monitor mostra em qual endereço o PCF8574 foi encontrado.
+
+---
+
+## 🔑 Senhas (`segredos.h`)
+
+O Wi-Fi e a senha de administrador ficam no arquivo `segredos.h`, fora do código principal. Ele está no `.gitignore` e não vai para o GitHub.
+
+1. Na primeira vez, copie o `segredos.exemplo.h` para `segredos.h`, na mesma pasta.
+2. Preencha `WIFI_SSID`, `WIFI_SENHA` e `SENHA_ADM`.
+
+A Arduino IDE mostra o `segredos.h` como uma aba ao lado do `.ino`. Ele é compilado junto e as senhas vão normalmente para o ESP32.
 
 ---
 
@@ -109,8 +119,46 @@ A senha é salva na memória não volátil do ESP32 (`Preferences`), no lugar da
 
 ---
 
+## 🛠️ Melhorias pendentes
+
+### Ocorrência de 29.10.2026
+
+Logo de manhã, o teclado físico parou de responder: nenhuma tecla dava bip e o portão não abria. Pelo site funcionava normalmente. Desconectar e reconectar o RJ45 resolveu.
+
+**Causa provável:** o barramento I2C travou. Um ruído no cabo longo pode pegar o PCF8574 no meio de uma leitura, e ele fica segurando o SDA em LOW. A partir daí toda leitura falha, e `pcfRead()` devolve `0xFF` ("nenhuma tecla"), sem som e sem aviso. Reconectar o cabo desliga e religa o PCF8574 (o 3V3 vem pelo RJ45), e isso destrava o barramento. O buzzer não passa pelo I2C, por isso continuou funcionando.
+
+Descartadas:
+* Tecla fantasma por umidade: os pull-ups de 10 kΩ nas linhas já estão instalados e o problema não voltou desde então.
+* Mau contato no conector: não dá para descartar de vez. Se voltar a acontecer, vale olhar se há oxidação.
+
+### 1. Recuperação automática do I2C (prioridade)
+
+Hoje o código só procura o PCF8574 no `setup()` e nunca percebe quando ele para de responder.
+
+* Contar as falhas seguidas de `pcfWrite()` / `pcfRead()`.
+* A partir de umas 20 falhas seguidas, destravar o barramento:
+  1. `Wire.end()`
+  2. SCL como saída e 9 pulsos manuais, para o PCF8574 soltar o SDA
+  3. Gerar uma condição de STOP (SDA de LOW para HIGH com o SCL em HIGH)
+  4. `Wire.begin(I2C_SDA, I2C_SCL, I2C_CLOCK)` e `pcfDetect()`
+* Zerar o contador quando uma leitura der certo, e mostrar a recuperação no Serial.
+
+São poucas linhas de código, sem impacto no tamanho do programa.
+
+### 2. Tecla presa (opcional, prioridade baixa)
+
+Se a mesma tecla aparecer pressionada por mais de ~5 s, tratar como presa e liberar o debounce (`kp_pressed`). Com os pull-ups instalados, isso é só uma proteção extra.
+
+### 3. Página de diagnóstico no site (opcional)
+
+Uma rota `/status` em texto simples, sem HTML: se o PCF8574 responde, o endereço dele, o total de erros de I2C, quantas recuperações foram feitas e há quanto tempo o ESP32 está ligado. Serve para conferir pelo celular, antes de mexer no cabo, se o problema é no I2C.
+
+> 💡 Sobre o espaço: a maior parte do programa já é Wi-Fi + WebServer, e isso já está incluído. Uma rota de texto puro acrescenta poucas centenas de bytes. Antes e depois da mudança, compare a linha "O sketch usa X bytes (Y%)" na compilação da Arduino IDE.
+
+---
+
 ## 🧾 Autoria
 
 **Leonardo Pascoalini de Souza**
 
-O método de teclado 4×3 com 6 fios continua disponível na versão `Porteiro - 14.01.2026`.
+O método de teclado 4×3 com 6 fios continua disponível na pasta [`arduino_teclado_6fios`](../arduino_teclado_6fios/).
