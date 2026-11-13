@@ -72,7 +72,11 @@ O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 vi
 3. No celular, conectado ao mesmo Wi-Fi, abra `http://porteiro.local` ou o IP mostrado. Dá para adicionar à tela inicial como atalho.
 
 * A senha é a mesma do teclado físico.
-* **Modo administrador pelo site:** digite a senha de administrador e aperte `#`. Aparece a opção **Trocar senha do portão**; digite os 6 dígitos novos (eles aparecem na tela para conferir) e aperte `#` para salvar. O portão toca o som de nova configuração. A sessão expira após 3 minutos sem uso.
+* **Modo administrador pelo site:** digite a senha de administrador e aperte `#`. A sessão expira após 3 minutos sem uso. Opções:
+  * **Trocar senha do portão:** digite os 6 dígitos novos (eles aparecem na tela para conferir) e aperte `#` para salvar. O portão toca o som de nova configuração.
+  * **Atualizar programa:** envia um programa novo pelo site (veja *Atualizar o programa sem USB*).
+  * **Ver registro:** situação do teclado e os últimos 60 eventos com data e hora (aberturas, senhas erradas, ruído, falhas de comunicação, motivo do último reinício). Senhas nunca aparecem no registro. O registro é apagado quando o ESP32 reinicia.
+* **Reiniciar porteiro:** botão redondo com o símbolo de ligar/desligar, no canto inferior esquerdo da tela inicial. Pede confirmação e reinicia o ESP32 em cerca de 15 segundos.
 * A senha de administrador é fixa no código (`gabaritoADM`) e não pode ser trocada pelo site nem pelo teclado. A senha do portão não pode ser igual a ela.
 * Senha certa pelo site: o relé aciona e a música toca no portão. Senha errada: toca o som de erro.
 * Depois de **5 erros seguidos**, o site fica bloqueado por **1 minuto**.
@@ -82,6 +86,48 @@ O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 vi
 > 💡 Digite o endereço com **`http://`** (sem o "s"). Se o navegador trocar sozinho para `https://`, a página não abre. Depois de abrir, salve como atalho na tela inicial.
 >
 > 💡 Alguns celulares Android não reconhecem endereços `.local`. Nesse caso, use o IP. Para o IP não mudar, reserve um IP fixo para o ESP32 no roteador (DHCP reservado).
+
+---
+
+## 🔄 Atualizar o programa sem USB
+
+A primeira gravação com esta versão precisa ser pelo USB. Depois disso, dá para atualizar pelo Wi-Fi de dois jeitos:
+
+**Pela Arduino IDE**
+1. Em **Ferramentas → Porta**, escolha `porteiro at 192.168.x.x` (porta de rede).
+2. Grave normalmente. A IDE pede uma senha: é a **senha de administrador**.
+
+**Pelo site (dá até pelo celular)**
+1. Na Arduino IDE: **Sketch → Exportar binário compilado**. A IDE cria a pasta `build` dentro da pasta do projeto.
+2. No site, entre no modo administrador → **Atualizar programa** → escolha o arquivo **`porteiro.ino.bin`** → **Enviar**.
+3. O porteiro grava, reinicia sozinho e volta em uns 15 segundos.
+
+Os outros arquivos da pasta `build` (`.bootloader.bin`, `.partitions.bin`, `.merged.bin`) são recusados. A pasta `build` está no `.gitignore`.
+
+Cuidados:
+
+* **Sempre grave com o nome e a senha do Wi-Fi preenchidos.** Se o programa enviado não conectar no Wi-Fi, a gravação sem fio deixa de funcionar e é preciso usar o USB de novo. A versão do git vem com `NOME_DA_REDE` / `SENHA_DA_REDE`.
+* Em **Ferramentas → Partition Scheme**, use **Default 4MB with spiffs**. Esquemas "No OTA" desativam a gravação sem fio.
+* Se a energia cair no meio da gravação, o programa antigo continua funcionando: o novo só passa a valer quando chega inteiro.
+* Durante a gravação (uns 20 a 40 s), o teclado e o site param de responder e o relé fica desligado.
+* Quem souber a senha de administrador e estiver no seu Wi-Fi consegue gravar um programa novo no porteiro.
+
+---
+
+## ⚡ Ruído elétrico (motor do portão de carro)
+
+O motor do portão basculante gera picos elétricos que podem chegar ao teclado pelo cabo. O código se protege assim:
+
+* **Leituras impossíveis são tratadas como ruído:** falha na comunicação I2C, pino em LOW sem nenhuma coluna ativa, coluna ativa que não aparece em LOW ou pino livre (P0) em LOW.
+* **Quarentena:** ao detectar ruído, o teclado fica 1,5 s ignorando tudo (`QUARENTENA_MS`) e a digitação em andamento é descartada sem apitar.
+* **Destravamento automático do I2C:** um pico pode deixar o PCF8574 travado segurando o SDA, e o teclado para de responder. Depois de 10 falhas seguidas, o ESP32 gera pulsos no SCL para destravar, reinicia o I2C e procura o PCF8574 de novo (a cada 3 s, enquanto não voltar).
+* **Tecla presa:** se uma tecla ficar "apertada" por mais de 10 s, isso aparece no registro (sinal de umidade ou defeito).
+
+Hardware recomendado:
+
+* **Pull-up de 10 kΩ** de cada linha (P1, P2, P4, P6) para o 3V3 na placa do PCF8574. O pull-up interno do PCF8574 é muito fraco e deixa o teclado sensível a umidade.
+* **Capacitor de 100 nF** (cerâmico, "104") entre VCC e GND na placa do PCF8574.
+* Cabo do porteiro separado dos fios do motor, ferrites no cabo RJ45 e motor aterrado.
 
 ---
 
