@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include "segredos.h"  // Wi-Fi e senha de administrador (não vai para o git; veja segredos.exemplo.h)
 #include <Update.h>
 #include <ArduinoOTA.h>
 #include <time.h>
@@ -15,8 +16,6 @@
 #define SERIAL_PRINT 1 // 1 para ativar prints no Serial Monitor; 0 para desativar
 
 // ------------------ Wi-Fi / Site local ------------------
-const char* WIFI_SSID  = "NOME_DA_REDE";
-const char* WIFI_SENHA = "SENHA_DA_REDE";
 const char* HOSTNAME   = "porteiro";        // acesso por http://porteiro.local
 const char* FUSO       = "<-03>3";          // horário de Brasília (para o registro de eventos)
 
@@ -449,7 +448,7 @@ void atualizarRele() {
 
 //------------------ Variáveis ------------------
 String gabarito = "123456";
-String gabaritoADM = "246810";
+String gabaritoADM = SENHA_ADM;  // definida em segredos.h
 String senha = "";
 int comparaGabarito;
 int comparaGabaritoADM;
@@ -615,7 +614,7 @@ const char PAGINA[] PROGMEM = R"rawliteral(<!doctype html>
   </div>
   <div id="atualizar">
     <p class="texto">Na Arduino IDE, use <b>Sketch → Exportar binário compilado</b> e envie o arquivo
-      <b>porteiro.ino.bin</b> da pasta <b>build</b>. O porteiro reinicia sozinho no final.</p>
+      <b>esp32_i2c.ino.bin</b> da pasta <b>build</b>. O porteiro reinicia sozinho no final.</p>
     <input type="file" id="arquivo" accept=".bin">
     <progress id="progresso" max="100" value="0"></progress>
     <div class="botoes">
@@ -752,7 +751,7 @@ const char PAGINA[] PROGMEM = R"rawliteral(<!doctype html>
   function enviarPrograma() {
     if (enviando) return;
     const f = $('arquivo').files[0];
-    if (!f) { aviso('Escolha o arquivo porteiro.ino.bin', 'erro'); return; }
+    if (!f) { aviso('Escolha o arquivo esp32_i2c.ino.bin', 'erro'); return; }
     if (!f.name.endsWith('.bin')) { aviso('O arquivo precisa terminar em .bin', 'erro'); return; }
 
     const dados = new FormData();
@@ -939,7 +938,7 @@ void handleReiniciar() {
 // =======================================================
 // ATUALIZAÇÃO DO PROGRAMA
 // -------------------------------------------------------
-// Pelo site (modo administrador): upload do porteiro.ino.bin.
+// Pelo site (modo administrador): upload do esp32_i2c.ino.bin.
 // Pela Arduino IDE: em Ferramentas → Porta aparece "porteiro at <IP>";
 // a IDE pede a senha, que é a mesma senha de administrador.
 // O programa novo é gravado numa área separada da memória e só passa a
@@ -977,7 +976,7 @@ void handleAtualizarUpload() {
     nome.toLowerCase();
     if (!nome.endsWith(".bin") || nome.indexOf("bootloader") >= 0 ||
         nome.indexOf("partitions") >= 0 || nome.indexOf("merged") >= 0) {
-      falhaAtualizacao("Arquivo errado: envie o porteiro.ino.bin");
+      falhaAtualizacao("Arquivo errado: envie o esp32_i2c.ino.bin");
       return;
     }
 
@@ -994,7 +993,7 @@ void handleAtualizarUpload() {
   else if (up.status == UPLOAD_FILE_END) {
     if (!atualizacaoAutorizada || atualizacaoErro.length()) return;
     if (up.totalSize < 100000) {
-      falhaAtualizacao("Arquivo pequeno demais: envie o porteiro.ino.bin");
+      falhaAtualizacao("Arquivo pequeno demais: envie o esp32_i2c.ino.bin");
       return;
     }
     if (Update.end(true)) atualizacaoOk = true;

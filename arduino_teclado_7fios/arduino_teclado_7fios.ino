@@ -1,9 +1,10 @@
+#include "segredos.h"  // senhas (não vai para o git; veja segredos.exemplo.h)
 #include <Keypad.h>
 #include <EEPROM.h>
 
 //------------------ Variáveis ------------------
 String gabarito = "123456";
-String gabaritoADM = "246810";
+String gabaritoADM = SENHA_ADM;  // definida em segredos.h
 String senha = "";
 char caractere;
 int comparaGabarito;
