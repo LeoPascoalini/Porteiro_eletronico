@@ -74,6 +74,12 @@ O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 vi
 3. No celular, conectado ao mesmo Wi-Fi, abra `http://porteiro.local` ou o IP mostrado. Dá para adicionar à tela inicial como atalho.
 
 * A senha é a mesma do teclado físico.
+* **Modo administrador pelo site:** digite a senha de administrador e aperte `#`. A sessão expira após 3 minutos sem uso. Opções:
+  * **Trocar senha do portão:** digite os 6 dígitos novos (eles aparecem na tela para conferir) e aperte `#` para salvar. O portão toca o som de nova configuração.
+  * **Atualizar programa:** envia um programa novo pelo site (veja *Atualizar o programa sem USB*).
+  * **Ver registro:** situação do teclado e os últimos 60 eventos com data e hora (aberturas, senhas erradas, ruído, falhas de comunicação, motivo do último reinício). Senhas nunca aparecem no registro. O registro é apagado quando o ESP32 reinicia.
+* **Reiniciar porteiro:** botão redondo com o símbolo de ligar/desligar, no canto inferior esquerdo da tela inicial. Pede confirmação e reinicia o ESP32 em cerca de 15 segundos.
+* A senha de administrador é fixa no código (`gabaritoADM`) e não pode ser trocada pelo site nem pelo teclado. A senha do portão não pode ser igual a ela.
 * **Modo administrador pelo site:** digite a senha de administrador e aperte `#`. Aparece a opção **Trocar senha do portão**; digite os 6 dígitos novos (eles aparecem na tela para conferir) e aperte `#` para salvar. O portão toca o som de nova configuração. A sessão expira após 3 minutos sem uso.
 * A senha de administrador é fixa no `segredos.h` (`SENHA_ADM`) e não pode ser trocada pelo site nem pelo teclado. A senha do portão não pode ser igual a ela.
 * Senha certa pelo site: o relé aciona e a música toca no portão. Senha errada: toca o som de erro.
@@ -84,6 +90,48 @@ O ESP32 se conecta ao Wi-Fi da casa e serve uma página com um **teclado 3×4 vi
 > 💡 Digite o endereço com **`http://`** (sem o "s"). Se o navegador trocar sozinho para `https://`, a página não abre. Depois de abrir, salve como atalho na tela inicial.
 >
 > 💡 Alguns celulares Android não reconhecem endereços `.local`. Nesse caso, use o IP. Para o IP não mudar, reserve um IP fixo para o ESP32 no roteador (DHCP reservado).
+
+---
+
+## 🔄 Atualizar o programa sem USB
+
+A primeira gravação com esta versão precisa ser pelo USB. Depois disso, dá para atualizar pelo Wi-Fi de dois jeitos:
+
+**Pela Arduino IDE**
+1. Em **Ferramentas → Porta**, escolha `porteiro at 192.168.x.x` (porta de rede).
+2. Grave normalmente. A IDE pede uma senha: é a **senha de administrador**.
+
+**Pelo site (dá até pelo celular)**
+1. Na Arduino IDE: **Sketch → Exportar binário compilado**. A IDE cria a pasta `build` dentro da pasta do projeto.
+2. No site, entre no modo administrador → **Atualizar programa** → escolha o arquivo **`esp32_i2c.ino.bin`** → **Enviar**.
+3. O porteiro grava, reinicia sozinho e volta em uns 15 segundos.
+
+Os outros arquivos da pasta `build` (`.bootloader.bin`, `.partitions.bin`, `.merged.bin`) são recusados. A pasta `build` está no `.gitignore`.
+
+Cuidados:
+
+* **Sempre grave com o nome e a senha do Wi-Fi preenchidos.** Se o programa enviado não conectar no Wi-Fi, a gravação sem fio deixa de funcionar e é preciso usar o USB de novo. O Wi-Fi fica no `segredos.h` (veja [Senhas](#-senhas-segredosh)).
+* Em **Ferramentas → Partition Scheme**, use **Default 4MB with spiffs**. Esquemas "No OTA" desativam a gravação sem fio.
+* Se a energia cair no meio da gravação, o programa antigo continua funcionando: o novo só passa a valer quando chega inteiro.
+* Durante a gravação (uns 20 a 40 s), o teclado e o site param de responder e o relé fica desligado.
+* Quem souber a senha de administrador e estiver no seu Wi-Fi consegue gravar um programa novo no porteiro.
+
+---
+
+## ⚡ Ruído elétrico (motor do portão de carro)
+
+O motor do portão basculante gera picos elétricos que podem chegar ao teclado pelo cabo. O código se protege assim:
+
+* **Leituras impossíveis são tratadas como ruído:** falha na comunicação I2C, pino em LOW sem nenhuma coluna ativa, coluna ativa que não aparece em LOW ou pino livre (P0) em LOW.
+* **Quarentena:** ao detectar ruído, o teclado fica 1,5 s ignorando tudo (`QUARENTENA_MS`) e a digitação em andamento é descartada sem apitar.
+* **Destravamento automático do I2C:** um pico pode deixar o PCF8574 travado segurando o SDA, e o teclado para de responder. Depois de 10 falhas seguidas, o ESP32 gera pulsos no SCL para destravar, reinicia o I2C e procura o PCF8574 de novo (a cada 3 s, enquanto não voltar).
+* **Tecla presa:** se uma tecla ficar "apertada" por mais de 10 s, isso aparece no registro (sinal de umidade ou defeito).
+
+Hardware recomendado:
+
+* **Pull-up de 10 kΩ** de cada linha (P1, P2, P4, P6) para o 3V3 na placa do PCF8574. O pull-up interno do PCF8574 é muito fraco e deixa o teclado sensível a umidade.
+* **Capacitor de 100 nF** (cerâmico, "104") entre VCC e GND na placa do PCF8574.
+* Cabo do porteiro separado dos fios do motor, ferrites no cabo RJ45 e motor aterrado.
 
 ---
 
@@ -119,7 +167,7 @@ A senha é salva na memória não volátil do ESP32 (`Preferences`), no lugar da
 
 ---
 
-## 🛠️ Melhorias pendentes
+## 🛠️ Ocorrências
 
 ### Ocorrência de 29.10.2026
 
@@ -131,29 +179,22 @@ Descartadas:
 * Tecla fantasma por umidade: os pull-ups de 10 kΩ nas linhas já estão instalados e o problema não voltou desde então.
 * Mau contato no conector: não dá para descartar de vez. Se voltar a acontecer, vale olhar se há oxidação.
 
-### 1. Recuperação automática do I2C (prioridade)
+Resolvido com a versão de 13.11.2026: destravamento automático do I2C, aviso de tecla presa e situação do teclado na tela de registro do site.
 
-Hoje o código só procura o PCF8574 no `setup()` e nunca percebe quando ele para de responder.
+### Novembro de 2026: teclado volta a parar depois de horas ou dias
 
-* Contar as falhas seguidas de `pcfWrite()` / `pcfRead()`.
-* A partir de umas 20 falhas seguidas, destravar o barramento:
-  1. `Wire.end()`
-  2. SCL como saída e 9 pulsos manuais, para o PCF8574 soltar o SDA
-  3. Gerar uma condição de STOP (SDA de LOW para HIGH com o SCL em HIGH)
-  4. `Wire.begin(I2C_SDA, I2C_SCL, I2C_CLOCK)` e `pcfDetect()`
-* Zerar o contador quando uma leitura der certo, e mostrar a recuperação no Serial.
+Com o destravamento automático, o teclado ainda para de vez em quando. O registro mostra:
 
-São poucas linhas de código, sem impacto no tamanho do programa.
+* Rajadas de erro de I2C de 10–20 s, várias vezes por dia, que o destravamento resolve em poucos segundos.
+* Muito mais destravamentos do que episódios de ruído (23540 contra 279 em 5 dias). Como o código tenta a cada 3 s, isso indica períodos longos (horas) sem comunicação, em que os pulsos no SCL e o reinício do `Wire` não trazem o PCF8574 de volta.
+* Ruído logo depois de o próprio portão abrir (o relé aciona a fechadura elétrica).
+* Às vezes o teclado volta depois de insistir nas teclas. Ponto cego do código: se as falhas forem intermitentes (nunca 10 seguidas), não há destravamento nem registro, mas cada falha renova a quarentena de 1,5 s e o teclado ignora tudo calado.
+* Tirar e recolocar a energia sempre resolve.
 
-### 2. Tecla presa (opcional, prioridade baixa)
+Testes pendentes:
 
-Se a mesma tecla aparecer pressionada por mais de ~5 s, tratar como presa e liberar o debounce (`kp_pressed`). Com os pull-ups instalados, isso é só uma proteção extra.
-
-### 3. Página de diagnóstico no site (opcional)
-
-Uma rota `/status` em texto simples, sem HTML: se o PCF8574 responde, o endereço dele, o total de erros de I2C, quantas recuperações foram feitas e há quanto tempo o ESP32 está ligado. Serve para conferir pelo celular, antes de mexer no cabo, se o problema é no I2C.
-
-> 💡 Sobre o espaço: a maior parte do programa já é Wi-Fi + WebServer, e isso já está incluído. Uma rota de texto puro acrescenta poucas centenas de bytes. Antes e depois da mudança, compare a linha "O sketch usa X bytes (Y%)" na compilação da Arduino IDE.
+* Abrir o portão pelo site várias vezes e ver se cada abertura gera ruído no registro. Repetir com o fio da fechadura solto do relé. Se a fechadura for a fonte, colocar diodo (fechadura DC) ou varistor/snubber RC (fechadura AC) nos terminais dela.
+* Na próxima parada, anotar a situação do teclado no registro ("funcionando", "SEM COMUNICAÇÃO" ou "ignorando por ruído") antes de reiniciar, e testar o botão EN da placa antes de tirar a energia.
 
 ---
 

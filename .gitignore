@@ -1,2 +1,5 @@
 # Senhas e Wi-Fi de cada porteiro (use o segredos.exemplo.h como modelo)
 segredos.h
+
+# Binários gerados por "Sketch → Exportar binário compilado" na Arduino IDE
+build/
